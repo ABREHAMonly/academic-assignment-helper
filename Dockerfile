@@ -1,7 +1,8 @@
 # Dockerfile (at project root)
 FROM python:3.11-slim
 
-WORKDIR /app
+# Set working directory to /app/backend
+WORKDIR /app/backend
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,14 +11,14 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
+# Copy requirements from backend directory
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire backend directory
+# Copy entire backend directory to /app/backend
 COPY backend/ .
 
-# Create uploads directory
+# Create uploads directory in /app/backend
 RUN mkdir -p uploads && chmod 755 uploads
 
 # Create non-root user
