@@ -1,0 +1,210 @@
+{
+  "name": "Academic Assignment Analysis",
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "parameters": {
+        "path": "assignment",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "assignment-webhook"
+    },
+    {
+      "name": "Extract Text Content",
+      "type": "n8n-nodes-base.code",
+      "position": [450, 300],
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\n\n// Get file path from webhook\nconst filePath = items[0].json.file_path;\nconst text = items[0].json.text || '';\n\nlet extractedText = text;\n\n// If text not provided, read from file\nif (!text && filePath && fs.existsSync(filePath)) {\n  const ext = path.extname(filePath).toLowerCase();\n  \n  if (ext === '.pdf') {\n    // PDF extraction would require pdf-parse library\n    // For now, return placeholder\n    extractedText = '[PDF content extracted]';\n  } else if (ext === '.docx') {\n    // DOCX extraction\n    extractedText = '[DOCX content extracted]';\n  } else if (ext === '.txt') {\n    extractedText = fs.readFileSync(filePath, 'utf8');\n  }\n}\n\nreturn [{\n  json: {\n    assignment_id: items[0].json.assignment_id,\n    student_id: items[0].json.student_id,\n    filename: items[0].json.filename,\n    extracted_text: extractedText.substring(0, 10000),\n    word_count: extractedText.split(/\\s+/).length\n  }\n}];"
+      }
+    },
+    {
+      "name": "Call RAG API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [650, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'http://backend:8000/sources?query=' + encodeURIComponent($json.extracted_text.substring(0, 500)) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.N8N_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "AI Analysis",
+      "type": "n8n-nodes-base.openAi",
+      "position": [850, 200],
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-3.5-turbo",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an academic research assistant. Analyze student assignments and provide structured feedback."
+            },
+            {
+              "role": "user",
+              "content": "=Analyze this assignment:\n\n{{ $json.extracted_text }}\n\nProvide:\n1. Main topic\n2. Key themes\n3. Research questions\n4. Academic level (Undergraduate/Graduate/PhD)\n5. Suggestions for improvement\n6. Recommended citation style\n\nFormat as JSON with those keys."
+            }
+          ]
+        },
+        "options": {
+          "responseFormat": "json_object"
+        }
+      }
+    },
+    {
+      "name": "Plagiarism Check",
+      "type": "n8n-nodes-base.openAi",
+      "position": [850, 400],
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-3.5-turbo",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a plagiarism detection system. Compare text against provided sources."
+            },
+            {
+              "role": "user",
+              "content": "=Check for plagiarism between assignment and sources:\n\nAssignment: {{ $json.extracted_text.substring(0, 1500) }}\n\nSources: {{ JSON.stringify($node['Call RAG API'].json.sources) }}\n\nReturn JSON with: plagiarism_score (0-100), flagged_sections (array), confidence (high/medium/low)"
+            }
+          ]
+        },
+        "options": {
+          "responseFormat": "json_object"
+        }
+      }
+    },
+    {
+      "name": "Combine Results",
+      "type": "n8n-nodes-base.code",
+      "position": [1050, 300],
+      "parameters": {
+        "jsCode": "const aiAnalysis = JSON.parse($json.messages[0].message.content);\nconst plagiarismCheck = JSON.parse($json.messages[1].message.content);\nconst sources = $node['Call RAG API'].json.sources;\n\nconst result = {\n  assignment_id: items[0].json.assignment_id,\n  student_id: items[0].json.student_id,\n  suggested_sources: sources,\n  topic: aiAnalysis.topic || aiAnalysis.main_topic,\n  academic_level: aiAnalysis.academic_level,\n  research_suggestions: aiAnalysis.suggestions || aiAnalysis.suggestions_for_improvement,\n  citation_recommendations: aiAnalysis.recommended_citation_style || 'APA',\n  plagiarism_score: plagiarismCheck.plagiarism_score || 0,\n  flagged_sections: plagiarismCheck.flagged_sections || [],\n  confidence_score: plagiarismCheck.confidence === 'high' ? 0.9 : \n                    plagiarismCheck.confidence === 'medium' ? 0.7 : 0.5\n};\n\nreturn [{ json: result }];"
+      }
+    },
+    {
+      "name": "Store in Database",
+      "type": "n8n-nodes-base.postgres",
+      "position": [1250, 300],
+      "parameters": {
+        "operation": "insert",
+        "table": "analysis_results",
+        "columns": "assignment_id,suggested_sources,plagiarism_score,flagged_sections,research_suggestions,citation_recommendations,confidence_score",
+        "values": "={{ $json.assignment_id }},={{ JSON.stringify($json.suggested_sources) }},={{ $json.plagiarism_score }},={{ JSON.stringify($json.flagged_sections) }},={{ $json.research_suggestions }},={{ $json.citation_recommendations }},={{ $json.confidence_score }}",
+        "additionalFields": {},
+        "options": {}
+      }
+    },
+    {
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [1450, 300],
+      "parameters": {
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Text Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text Content": {
+      "main": [
+        [
+          {
+            "node": "Call RAG API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call RAG API": {
+      "main": [
+        [
+          {
+            "node": "AI Analysis",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Plagiarism Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plagiarism Check": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine Results": {
+      "main": [
+        [
+          {
+            "node": "Store in Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store in Database": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": []
+}

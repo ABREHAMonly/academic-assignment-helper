@@ -1,266 +1,258 @@
-# Academic Assignment Helper & Plagiarism Detector (RAG-Powered)
+# Academic Assignment Helper & Plagiarism Detector
 
-A comprehensive backend system with n8n automation for academic assignment processing, RAG-based research suggestions, and AI-powered plagiarism detection.
+A RAG-powered system for academic assignment analysis with plagiarism detection.
 
 ## Features
+- JWT-based authentication
+- Assignment file upload (PDF, DOCX, TXT)
+- RAG-based source suggestions
+- AI-powered plagiarism detection
+- PostgreSQL with pgvector for embeddings
+- n8n workflow automation
+- Docker support
 
-- **JWT Authentication**: Secure API endpoints with student registration/login
-- **File Upload**: Support for PDF, DOCX, and TXT files
-- **RAG Pipeline**: Vector similarity search for academic sources
-- **AI Analysis**: GPT-powered assignment analysis and suggestions
-- **Plagiarism Detection**: Comparison against academic database
-- **n8n Automation**: Workflow orchestration for processing pipeline
-- **Dockerized**: Complete containerized setup with PostgreSQL + pgvector
+## Project Structure
+academic-assignment-helper/
+├── backend/ # FastAPI backend
+├── workflows/ # n8n workflows
+├── data/ # Sample data
+├── docker-compose.yml
+├── .env.example
+└── README.md
 
-## Architecture
-┌─────────┐ ┌──────────┐ ┌──────────┐ ┌─────────────┐
-│ Client │────▶│ FastAPI │────▶│ n8n │────▶│ OpenAI │
-│ (Web) │◀────│ Backend │◀────│ Workflow │◀────│ API │
-└─────────┘ └──────────┘ └──────────┘ └─────────────┘
-│ │ │
-▼ ▼ ▼
-┌──────────┐ ┌──────────┐ ┌─────────────┐
-│ JWT │ │ Academic │ │ Embedding │
-│ Auth │ │ Sources │ │ Generation │
-└──────────┘ └──────────┘ └─────────────┘
-│ │ │
-▼ ▼ ▼
-┌─────────────────────────────────────────────┐
-│ PostgreSQL + pgvector │
-│ (Vector Database & Storage) │
-└─────────────────────────────────────────────┘
-
-text
 
 ## Quick Start
 
-### Prerequisites
+### Option 1: Docker (Production)
+1. Clone the repository
+2. Copy `.env.example` to `.env` and configure variables
+3. Run: `docker-compose up -d`
+4. Access:
+   - Backend API: http://localhost:8000
+   - API Docs: http://localhost:8000/docs
+   - n8n: http://localhost:5678
 
-- Docker & Docker Compose
-- Python 3.11+
-- OpenAI API Key
+### Option 2: Local Development
+1. Install Python 3.11+ and PostgreSQL
+2. Create virtual environment: `python -m venv venv`
+3. Activate: `source venv/bin/activate` (Linux/Mac) or `venv\Scripts\activate` (Windows)
+4. Install dependencies: `pip install -r backend/requirements.txt`
+5. Set up environment variables in `.env`
+6. Initialize database: `python backend/setup_db.py`
+7. Run backend: `python backend/main.py`
+8. Run n8n separately if needed
 
-### Installation
+## Environment Variables
+See `.env.example` for all required variables:
+- `DATABASE_URL`: PostgreSQL connection string
+- `JWT_SECRET_KEY`: Secret for JWT tokens
+- `OPENAI_API_KEY`: OpenAI API key
+- `USE_VECTOR`: Enable pgvector (true/false)
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd academic-assignment-helper
-Configure environment variables:
+## API Endpoints
+- `POST /auth/register` - Register new user
+- `POST /auth/login` - Login and get JWT
+- `POST /upload` - Upload assignment
+- `GET /analysis/{id}` - Get analysis results
+- `GET /sources` - Search academic sources
+- `GET /health` - Health check
 
-bash
-cp .env.example .env
-# Edit .env with your OpenAI API key and other settings
-Initialize and start services:
+## Testing
+Run local tests: `python test_local.py`
+Run API tests: `python test_api.py`
 
-bash
-make init
-Or manually:
+## Development
+- Local setup: `python backend/local_setup.py`
+- Database setup: `python backend/setup_db.py`
+- Use `.env` for configuration
 
-bash
-# Build and start services
-docker-compose up -d --build
+## Production Deployment
+1. Use Docker Compose for production
+2. Configure proper SSL/TLS
+3. Use secure passwords for JWT and database
+4. Set up monitoring and logging
+5. Configure backup for database
 
-# Initialize database
-docker-compose exec backend python scripts/init_db.py
-
-# Seed with sample data
-docker-compose exec backend python scripts/seed_academic_data.py
-API Documentation
-Once running, access the API documentation at:
-
-Swagger UI: http://localhost:8000/api/docs
-
-ReDoc: http://localhost:8000/api/redoc
-
-Authentication Endpoints
-text
-POST /api/v1/auth/register    # Register new student
-POST /api/v1/auth/login       # Login and get JWT token
-Assignment Endpoints
-text
-POST /api/v1/assignments/upload    # Upload assignment file
-GET  /api/v1/assignments           # List user assignments
-Analysis Endpoints
-text
-GET /api/v1/analysis/{id}          # Get analysis results
-GET /api/v1/analysis/{id}/sources  # Get RAG-based source suggestions
-GET /api/v1/analysis/{id}/plagiarism  # Get detailed plagiarism report
-n8n Workflow
-Access n8n at http://localhost:5678
-
-The workflow includes:
-
-Webhook trigger from FastAPI
-
-Document parsing and text extraction
-
-Embedding generation using OpenAI
-
-Vector similarity search in PostgreSQL
-
-AI analysis with GPT-4
-
-Plagiarism detection
-
-Results storage and status update
-
-Database Schema
-Main Tables
-students: User accounts with authentication
-
-assignments: Assignment metadata and text
-
-analysis_results: Analysis output and suggestions
-
-academic_sources: Vector-embedded academic content
-
-Vector Search
-The system uses PostgreSQL with pgvector extension for:
-
-Storing 1536-dimensional embeddings
-
-Efficient similarity search using IVFFlat indexing
-
-RAG-based context retrieval
-
-Testing
-Run tests with:
-
-bash
-make test
-Or manually:
-
-bash
-docker-compose exec backend pytest /app/src/tests -v
-Production Deployment
-Environment Variables
-Set these in production:
-
-bash
-JWT_SECRET_KEY=secure-random-string
-OPENAI_API_KEY=your-production-key
-POSTGRES_PASSWORD=strong-password
-Security Considerations
-Use HTTPS in production
-
-Configure CORS appropriately
-
-Set up firewall rules
-
-Regular database backups
-
-Monitor OpenAI API usage
-
-Development
-Running Locally
-bash
-# Install backend dependencies
-cd backend
-pip install -r requirements.txt
-
-# Set environment variables
-export DATABASE_URL=postgresql://student:secure_password@localhost/academic_helper
-export OPENAI_API_KEY=your_key
-
-# Run migrations
-alembic upgrade head
-
-# Start backend
-uvicorn src.main:app --reload
-Adding New Features
-Create database migration:
-
-bash
-alembic revision --autogenerate -m "description"
-Add API endpoints in src/api/v1/endpoints/
-
-Add tests in src/tests/
-
-Update n8n workflow if needed
-
-Performance Optimization
-Vector indexes for similarity search
-
-Connection pooling for database
-
-Redis caching for frequent queries
-
-Async processing for long-running tasks
-
-File size limits and validation
-
-License
+## License
 MIT
 
-text
+setup.sh (Setup script)
 
-## 9. Setup Instructions
+#!/bin/bash
 
-### Step-by-Step Setup:
+echo "🔧 Setting up Academic Assignment Helper..."
 
-1. **Clone and navigate to project:**
-```bash
-git clone <your-repo-url>
+# Check Python version
+python3 --version
+
+# Create virtual environment
+echo "📦 Creating virtual environment..."
+python3 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+echo "📦 Installing dependencies..."
+pip install --upgrade pip
+pip install -r backend/requirements.txt
+
+# Create .env file if it doesn't exist
+if [ ! -f .env ]; then
+    echo "📝 Creating .env file from template..."
+    cp .env.example .env
+    echo "⚠️  Please update .env file with your configuration"
+fi
+
+# Create necessary directories
+mkdir -p uploads workflows data
+
+echo "✅ Setup complete!"
+echo "📋 Next steps:"
+echo "  1. Update .env file with your configuration"
+echo "  2. Run: python backend/setup_db.py"
+echo "  3. Run: python backend/main.py"
+echo "  4. Access: http://localhost:8000/docs"
+
+
+.env.example
+
+# Database Configuration
+# For Docker: postgresql://student:secure_password@postgres:5432/academic_helper
+# For Local: postgresql://username:password@localhost:5432/academic_helper
+DATABASE_URL=postgresql://student:secure_password@localhost:5432/academic_helper
+
+# JWT Authentication
+JWT_SECRET_KEY=your-super-secret-jwt-key-change-this-in-production
+
+# OpenAI API
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Vector Database (pgvector)
+USE_VECTOR=false
+
+# n8n Configuration
+N8N_WEBHOOK_URL=http://localhost:5678/webhook/assignment
+N8N_ACCESS_TOKEN=your-jwt-secret
+
+# Backend Configuration
+BACKEND_HOST=localhost
+BACKEND_PORT=8000
+
+# PostgreSQL (for Docker)
+POSTGRES_DB=academic_helper
+POSTGRES_USER=student
+POSTGRES_PASSWORD=secure_password
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+
+2. DEPLOYMENT INSTRUCTIONS
+Option A: Docker Deployment (Production)
+
+# 1. Clone and setup
+git clone <repository-url>
 cd academic-assignment-helper
-Set up environment:
 
-bash
+# 2. Configure environment
 cp .env.example .env
-# Edit .env with your OpenAI API key
-Start all services:
+# Edit .env with your OpenAI API key and other settings
 
+# 3. Start all services
+docker-compose up -d
+
+# 4. Check services
+docker-compose ps
+
+# 5. View logs
+docker-compose logs -f backend
+
+
+Option B: Local Development (Without Docker)
+
+# 1. Setup (one-time)
+chmod +x setup.sh
+./setup.sh
+
+# 2. Configure .env file
+nano .env  # Update with your Neon DB connection string
+
+# 3. Initialize database
+python backend/setup_db.py
+
+# 4. Start backend
+python backend/main.py
+
+# 5. Start n8n (optional)
+docker run -it --rm \
+  --name n8n \
+  -p 5678:5678 \
+  -v n8n_data:/home/node/.n8n \
+  n8nio/n8n
+
+# 6. Import workflow to n8n
+# Upload workflows/assignment_analysis_workflow.json to n8n UI
+
+
+3. KEY FEATURES
+Dual-Mode Architecture
+Production Mode (Docker): Uses pgvector, full n8n automation
+
+Development Mode (Local): Works with Neon DB, simplified RAG
+
+Security Implementation
+JWT authentication with bcrypt password hashing
+
+Protected API endpoints
+
+Secure file handling
+
+Environment-based configuration
+
+Database Support
+PostgreSQL with pgvector for production
+
+PostgreSQL without vector for development (Neon DB compatible)
+
+SQLAlchemy ORM with migrations
+
+File Processing
+PDF, DOCX, TXT file support
+
+Automatic text extraction
+
+Secure file storage and cleanup
+
+RAG Integration
+Vector embeddings with pgvector
+
+Fallback text search for non-vector databases
+
+OpenAI embeddings and analysis
+
+4. TESTING
 bash
-docker-compose up -d --build
-Initialize database:
+# Test local API
+python test_local.py
 
-bash
-docker-compose exec backend python scripts/init_db.py
-Seed with academic data:
+# Test authentication and endpoints
+python test_api.py
 
-bash
-docker-compose exec backend python scripts/seed_academic_data.py
-Access services:
-
-API: http://localhost:8000/api/docs
-
-n8n: http://localhost:5678
-
-PGAdmin: http://localhost:5050 (admin@academic.com / admin123)
-
-Testing the API:
-bash
-# Register a user
-curl -X POST "http://localhost:8000/api/v1/auth/register" \
+# Manual testing with curl
+curl -X POST http://localhost:8000/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email": "student@example.com", "password": "password123", "full_name": "John Doe", "student_id": "STU001"}'
+  -d '{"email":"test@student.edu","password":"testpassword123","full_name":"Test Student","student_id":"S001"}'
 
-# Login
-curl -X POST "http://localhost:8000/api/v1/auth/login" \
+curl -X POST http://localhost:8000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "student@example.com", "password": "password123"}'
+  -d '{"email":"test@student.edu","password":"testpassword123"}'
+5. PRODUCTION NOTES
+Security: Change all default passwords in production
 
-# Use the token for upload
-curl -X POST "http://localhost:8000/api/v1/assignments/upload" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "file=@sample_assignment.pdf"
-Key Features Implemented:
-Professional FastAPI Structure: Modular, well-organized codebase
+SSL/TLS: Add HTTPS termination (nginx or similar)
 
-Complete JWT Authentication: Secure endpoints with proper validation
+Monitoring: Add logging and monitoring (Prometheus/Grafana)
 
-RAG Pipeline: Full vector search with pgvector integration
+Backup: Regular database backups
 
-n8n Automation: Complete workflow for assignment processing
+Scaling: Consider adding Redis for caching
 
-Database Schema: Optimized with indexes and relationships
-
-Error Handling: Comprehensive error handling and logging
-
-Testing: Complete test suite with fixtures
-
-Docker Orchestration: Multi-service setup with health checks
-
-CI/CD Ready: Structure supports easy deployment
-
-Production Configuration: Environment variables, security considerations

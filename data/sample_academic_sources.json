@@ -1,0 +1,26 @@
+[
+  {
+    "title": "Machine Learning: A Probabilistic Perspective",
+    "authors": "Kevin P. Murphy",
+    "publication_year": 2012,
+    "abstract": "This textbook offers a comprehensive introduction to machine learning from a probabilistic perspective. It covers both the theoretical foundations and practical applications of modern machine learning techniques.",
+    "full_text": "Full text content here...",
+    "source_type": "textbook"
+  },
+  {
+    "title": "Attention Is All You Need",
+    "authors": "Vaswani et al.",
+    "publication_year": 2017,
+    "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms.",
+    "full_text": "Full text content here...",
+    "source_type": "paper"
+  },
+  {
+    "title": "Deep Learning for Computer Vision",
+    "authors": "Ian Goodfellow, Yoshua Bengio, Aaron Courville",
+    "publication_year": 2016,
+    "abstract": "This book introduces a broad range of topics in deep learning, covering mathematical and conceptual background, deep learning techniques, and applications in computer vision.",
+    "full_text": "Full text content here...",
+    "source_type": "textbook"
+  }
+]
