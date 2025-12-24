@@ -1,3 +1,1 @@
-# Railway needs this at root level
-# This file redirects to backend requirements
 -r backend/requirements.txt
