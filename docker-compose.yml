@@ -1,3 +1,4 @@
+# docker-compose.yml (for local development only)
 version: '3.8'
 
 services:
@@ -13,8 +14,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - academic-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-student}"]
       interval: 10s
@@ -22,7 +21,9 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: academic-backend
     depends_on:
       postgres:
@@ -34,17 +35,14 @@ services:
       USE_VECTOR: ${USE_VECTOR:-true}
       BACKEND_HOST: 0.0.0.0
       BACKEND_PORT: 8000
-      UPLOAD_DIR: /tmp/uploads
+      UPLOAD_DIR: /app/uploads
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - uploads:/tmp/uploads
+      - uploads:/app/uploads
     networks:
       - academic-network
-    command: >
-      sh -c "python setup_db.py && 
-             uvicorn main:app --host 0.0.0.0 --port 8000"
 
   n8n:
     image: n8nio/n8n:latest
@@ -68,8 +66,6 @@ services:
       - ./data:/data
     networks:
       - academic-network
-    command: >
-      sh -c "n8n start --tunnel"
 
 volumes:
   postgres_data:
