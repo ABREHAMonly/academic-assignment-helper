@@ -25,8 +25,8 @@ RUN mkdir -p uploads && chmod 755 uploads
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
+# Expose port (Railway will override)
 EXPOSE 8000
 
-# Run application with proper PORT handling
-CMD ["sh", "-c", "python setup_db.py && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Use Railway's PORT environment variable
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
