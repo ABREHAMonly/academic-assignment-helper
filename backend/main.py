@@ -1,7 +1,7 @@
 # backend/main.py (updated imports)
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Optional
 import os
@@ -11,6 +11,7 @@ import PyPDF2
 import docx
 import json
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 # Load environment variables
 load_dotenv()
@@ -20,13 +21,6 @@ from auth import *
 from models import Base, Student, Assignment, AnalysisResult, AcademicSource
 from rag_service import RAGService
 
-# Initialize FastAPI
-app = FastAPI(
-    title="Academic Assignment Helper API",
-    version="2.0.0",
-    description="RAG-powered academic assignment analysis with plagiarism detection"
-)
-
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
@@ -35,9 +29,7 @@ if not DATABASE_URL:
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create tables on startup
-from contextlib import asynccontextmanager
-
+# Lifespan manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -49,12 +41,12 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown logic would go here
 
-# Update your FastAPI app initialization:
+# ✅ ONLY ONE FastAPI app instance
 app = FastAPI(
     title="Academic Assignment Helper API",
     version="2.0.0",
     description="RAG-powered academic assignment analysis with plagiarism detection",
-    lifespan=lifespan  # Add this line
+    lifespan=lifespan
 )
 
 # Security
@@ -81,7 +73,7 @@ def get_current_user(
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-# Helper functions
+# Helper functions (keep as is)
 def extract_text_from_pdf(file_path: str) -> str:
     try:
         with open(file_path, 'rb') as file:
@@ -116,7 +108,7 @@ def save_upload_file(file: UploadFile, upload_dir: str = "./uploads") -> str:
     
     return file_path
 
-# Routes
+# Routes (update health endpoint)
 @app.post("/auth/register")
 def register(
     email: str = Body(...),
@@ -130,7 +122,10 @@ def register(
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Create new user
+    # Create new user with password length check
+    if len(password) > 72:
+        raise HTTPException(status_code=400, detail="Password too long (max 72 characters)")
+    
     hashed_password = get_password_hash(password)
     student = Student(
         email=email,
@@ -152,7 +147,14 @@ def login(
     db: Session = Depends(get_db)
 ):
     user = db.query(Student).filter(Student.email == email).first()
-    if not user or not verify_password(password, user.password_hash):
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Check password length
+    if len(password) > 72:
+        password = password[:72]
+    
+    if not verify_password(password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     access_token = create_access_token(
@@ -278,7 +280,7 @@ def search_sources(
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_status = "connected"
     except Exception as e:
         print(f"Database connection error: {e}")
