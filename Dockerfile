@@ -13,9 +13,8 @@ RUN apt-get update && apt-get install -y \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy entire project (adjust if needed)
+# Copy backend code
 COPY backend/ /app/
-COPY .env.example /app/.env.example
 
 # Create uploads directory
 RUN mkdir -p uploads && chmod 755 uploads
@@ -27,5 +26,5 @@ USER appuser
 # Render uses PORT environment variable
 ENV PORT=8000
 
-# Command for Render
+# Command for Render - Fixed: use main:app since we're in /app
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

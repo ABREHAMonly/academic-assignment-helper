@@ -5,34 +5,41 @@ from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 import logging
-from openai import OpenAI
 
 logger = logging.getLogger(__name__)
-
-# Initialize OpenAI client properly
-openai_client = None
-try:
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key and api_key.strip():
-        openai_client = OpenAI(
-            api_key=api_key,
-            # Remove proxies parameter if not needed
-        )
-        print("✅ OpenAI client initialized")
-    else:
-        logger.warning("⚠️ OPENAI_API_KEY not found in environment variables")
-except Exception as e:
-    logger.error(f"❌ Failed to initialize OpenAI: {e}")
-    openai_client = None
 
 class RAGService:
     def __init__(self, db_session: Session):
         self.db = db_session
-        self.client = openai_client
+        self.client = self._init_openai_client()
         
+    def _init_openai_client(self):
+        """Initialize OpenAI client"""
+        try:
+            # Try new OpenAI SDK (v1.0+)
+            from openai import OpenAI
+            
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                print("⚠️ OPENAI_API_KEY not found")
+                return None
+            
+            # Initialize client WITHOUT proxies parameter
+            client = OpenAI(api_key=api_key)
+            print("✅ OpenAI client initialized successfully")
+            return client
+            
+        except ImportError:
+            print("❌ OpenAI package not installed")
+            return None
+        except Exception as e:
+            print(f"❌ Failed to initialize OpenAI: {e}")
+            return None
+    
     def search_sources(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """Search for academic sources using text similarity"""
         try:
+            # For Neon DB (no vector support), use text search
             query_sql = text("""
                 SELECT id, title, authors, publication_year, abstract, source_type
                 FROM academic_sources 
@@ -61,13 +68,14 @@ class RAGService:
                     "year": r[3],
                     "abstract": r[4][:500] if r[4] else "",
                     "type": r[5],
-                    "similarity_score": 0.8
+                    "similarity_score": 0.8  # Placeholder for text search
                 })
             
             return sources
             
         except Exception as e:
-            print(f"⚠️ Source search failed: {e}")
+            print(f"⚠️  Source search failed: {e}")
+            # Fallback to simple search
             return self._fallback_search(query, top_k)
     
     def _fallback_search(self, query: str, top_k: int) -> List[Dict[str, Any]]:
@@ -96,6 +104,7 @@ class RAGService:
             return self._mock_analysis()
         
         try:
+            # Format sources for context
             source_context = "\n\n".join([
                 f"Source {i+1}: {s['title']} by {s['authors']} ({s['year']})\n"
                 f"Abstract: {s['abstract'][:300]}..."
@@ -103,7 +112,7 @@ class RAGService:
             ])
             
             prompt = f"""
-            Analyze this student assignment:
+            Analyze the following student assignment and provide structured analysis:
             
             Assignment Text (first 2000 chars):
             {text[:2000]}
@@ -111,7 +120,7 @@ class RAGService:
             Relevant Sources:
             {source_context}
             
-            Return JSON with: topic, themes, research_questions, academic_level, 
+            Provide JSON with: topic, themes, research_questions, academic_level, 
             suggestions, citation_recommendation.
             """
             
@@ -128,7 +137,7 @@ class RAGService:
             return json.loads(response.choices[0].message.content)
             
         except Exception as e:
-            print(f"⚠️ OpenAI analysis failed: {e}")
+            print(f"⚠️  OpenAI analysis failed: {e}")
             return self._mock_analysis()
     
     def detect_plagiarism(self, text: str, sources: List[Dict]) -> Dict[str, Any]:
@@ -165,7 +174,7 @@ class RAGService:
             return json.loads(response.choices[0].message.content)
             
         except Exception as e:
-            print(f"⚠️ Plagiarism detection failed: {e}")
+            print(f"⚠️  Plagiarism detection failed: {e}")
             return {
                 "plagiarism_score": 0.0,
                 "flagged_sections": [],

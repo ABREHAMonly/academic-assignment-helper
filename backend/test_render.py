@@ -2,7 +2,7 @@ import requests
 import os
 
 # Test your Render URL after deployment
-BASE_URL = "https://your-app.onrender.com"  # Your Render URL
+BASE_URL = "https://academic-assignment-helper-8t2n.onrender.com"  # Your Render URL
 
 def test_render():
     print(f"Testing {BASE_URL}")

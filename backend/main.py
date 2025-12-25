@@ -1,4 +1,5 @@
 # backend/main.py (updated imports)
+# backend/main.py (fixed imports)
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import create_engine, text
@@ -22,7 +23,7 @@ from auth import *
 from models import Base, Student, Assignment, AnalysisResult, AcademicSource
 from rag_service import RAGService
 
-sys.path.insert(0, '/app')
+# Add paths for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Database setup
@@ -31,21 +32,6 @@ if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 
 engine = create_engine(DATABASE_URL)
-
-try:
-    # Initialize database
-    Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created/verified")
-    
-    # Add test data if needed
-    with SessionLocal() as db:
-        count = db.execute(text("SELECT COUNT(*) FROM academic_sources")).scalar()
-        if count == 0:
-            print("📚 Adding sample data...")
-            # Insert sample sources here
-except Exception as e:
-    print(f"⚠️ Database initialization warning: {e}")
-
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Lifespan manager
@@ -55,8 +41,49 @@ async def lifespan(app: FastAPI):
     try:
         Base.metadata.create_all(bind=engine)
         print("✅ Database tables created/verified")
+        
+        # Add test data if needed
+        with SessionLocal() as db:
+            count = db.execute(text("SELECT COUNT(*) FROM academic_sources")).scalar()
+            if count == 0:
+                print("📚 Adding sample data...")
+                # Insert sample sources
+                sample_sources = [
+                    {
+                        "title": "Machine Learning: A Probabilistic Perspective",
+                        "authors": "Kevin P. Murphy",
+                        "publication_year": 2012,
+                        "abstract": "This textbook offers a comprehensive introduction to machine learning from a probabilistic perspective.",
+                        "full_text": "Full text content here...",
+                        "source_type": "textbook"
+                    },
+                    {
+                        "title": "Attention Is All You Need",
+                        "authors": "Vaswani et al.",
+                        "publication_year": 2017,
+                        "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks.",
+                        "full_text": "Full text content here...",
+                        "source_type": "paper"
+                    }
+                ]
+                
+                for source in sample_sources:
+                    db.execute(text("""
+                        INSERT INTO academic_sources 
+                        (title, authors, publication_year, abstract, full_text, source_type)
+                        VALUES (:title, :authors, :year, :abstract, :full_text, :source_type)
+                    """), {
+                        "title": source["title"],
+                        "authors": source["authors"],
+                        "year": source["publication_year"],
+                        "abstract": source["abstract"],
+                        "full_text": source["full_text"],
+                        "source_type": source["source_type"]
+                    })
+                db.commit()
+                print("✅ Sample data inserted!")
     except Exception as e:
-        print(f"⚠️  Database setup warning: {e}")
+        print(f"⚠️ Database setup warning: {e}")
     yield
     # Shutdown logic would go here
 
@@ -327,6 +354,6 @@ if __name__ == "__main__":
     import os
     
     host = os.getenv("BACKEND_HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", os.getenv("BACKEND_PORT", 8000)))  # Railway uses PORT
+    port = int(os.getenv("PORT", os.getenv("BACKEND_PORT", 8000)))
     print(f"🚀 Starting Academic Assignment Helper on {host}:{port}...")
     uvicorn.run(app, host=host, port=port, log_level="info")
