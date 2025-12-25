@@ -1,4 +1,4 @@
-# railway.toml (at project root)
+# railway.toml (updated)
 [build]
 builder = "dockerfile"
 
@@ -9,3 +9,6 @@ healthCheckTimeout = 60
 
 [service]
 port = 8000
+
+[build.dockerfile]
+path = "Dockerfile"

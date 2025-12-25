@@ -28,5 +28,5 @@ USER appuser
 # Expose port (Railway will override)
 EXPOSE 8000
 
-# Use Railway's PORT environment variable
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Use Railway's PORT environment variable directly
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT

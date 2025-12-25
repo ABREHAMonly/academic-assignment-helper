@@ -23,44 +23,35 @@ pwd_context = CryptContext(
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a password against a hash.
-    Handles bcrypt's 72-byte limit and fallback if needed.
     """
     try:
-        # Encode to bytes for bcrypt
+        # Truncate password to 72 bytes for bcrypt
         plain_bytes = plain_password.encode('utf-8')
-        hashed_bytes = hashed_password.encode('utf-8')
+        if len(plain_bytes) > 72:
+            # Truncate to 72 bytes, then decode back
+            truncated_bytes = plain_bytes[:72]
+            plain_password = truncated_bytes.decode('utf-8', 'ignore')
         
-        # Try direct bcrypt first (more reliable)
-        return bcrypt.checkpw(plain_bytes, hashed_bytes)
-    except Exception:
-        try:
-            # Fallback to passlib if bcrypt fails
-            return pwd_context.verify(plain_password, hashed_password)
-        except Exception as e:
-            print(f"Password verification error: {e}")
-            return False
+        # Use passlib for verification (more robust)
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception as e:
+        print(f"Password verification error: {e}")
+        return False
 
 def get_password_hash(password: str) -> str:
     """
     Generate password hash with bcrypt.
-    Automatically handles 72-byte limit.
     """
     # Truncate to 72 bytes if password is too long
     password_bytes = password.encode('utf-8')
     if len(password_bytes) > 72:
-        # Truncate to 72 bytes, then decode back to string
         truncated_bytes = password_bytes[:72]
-        # Try to decode, ignoring errors if truncated in middle of character
         password = truncated_bytes.decode('utf-8', 'ignore')
-        # If empty after decode, use raw bytes
         if not password:
             password = truncated_bytes.decode('utf-8', 'replace')
     
-    # Generate salt and hash
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-    
-    return hashed.decode('utf-8')
+    # Use passlib for hashing
+    return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
