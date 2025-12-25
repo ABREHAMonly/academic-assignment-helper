@@ -29,4 +29,4 @@ USER appuser
 EXPOSE 8000
 
 # Use Railway's PORT environment variable
-CMD ["sh", "-c", "echo \"🚀 Starting on port: ${PORT:-8000}\" && echo \"📊 Database URL: ${DATABASE_URL:0:50}...\" && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
