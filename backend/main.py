@@ -31,6 +31,21 @@ if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 
 engine = create_engine(DATABASE_URL)
+
+try:
+    # Initialize database
+    Base.metadata.create_all(bind=engine)
+    print("✅ Database tables created/verified")
+    
+    # Add test data if needed
+    with SessionLocal() as db:
+        count = db.execute(text("SELECT COUNT(*) FROM academic_sources")).scalar()
+        if count == 0:
+            print("📚 Adding sample data...")
+            # Insert sample sources here
+except Exception as e:
+    print(f"⚠️ Database initialization warning: {e}")
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Lifespan manager
@@ -309,21 +324,9 @@ def root():
 
 if __name__ == "__main__":
     import uvicorn
+    import os
     
-    # Get port from Railway environment
-    port = int(os.getenv("PORT", 8000))
     host = os.getenv("BACKEND_HOST", "0.0.0.0")
-    
-    print(f"🚀 Starting Academic Assignment Helper")
-    print(f"🌐 Host: {host}")
-    print(f"🔢 Port: {port}")
-    print(f"🗄️  Database: {os.getenv('DATABASE_URL', 'Not set')[:50]}...")
-    print(f"🔑 OpenAI configured: {bool(os.getenv('OPENAI_API_KEY'))}")
-    
-    uvicorn.run(
-        "main:app",
-        host=host,
-        port=port,
-        log_level="info",
-        reload=False  # Disable reload in production
-    )
+    port = int(os.getenv("PORT", os.getenv("BACKEND_PORT", 8000)))  # Railway uses PORT
+    print(f"🚀 Starting Academic Assignment Helper on {host}:{port}...")
+    uvicorn.run(app, host=host, port=port, log_level="info")

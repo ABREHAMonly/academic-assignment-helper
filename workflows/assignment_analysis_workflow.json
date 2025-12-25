@@ -42,12 +42,12 @@
       }
     },
     {
-      "name": "AI Analysis",
-      "type": "n8n-nodes-base.openAi",
-      "position": [850, 200],
-      "parameters": {
-        "resource": "chat",
-        "model": "gpt-3.5-turbo",
+        "name": "AI Analysis",
+        "type": "n8n-nodes-base.openAi",
+        "position": [850, 200],
+        "parameters": {
+          "resource": "chat",
+          "model": "gpt-4o-mini", 
         "messages": {
           "values": [
             {
