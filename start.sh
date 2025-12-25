@@ -1,11 +1,22 @@
 #!/bin/bash
-echo "🚀 Starting Academic Assignment Helper..."
+# backend/start.sh
 
-# Wait for database to be ready (for container environments)
-sleep 2
+echo "🔧 Starting Academic Assignment Helper..."
+echo "📊 PORT: $PORT"
+echo "📊 PYTHONPATH: $PYTHONPATH"
 
-# Run database setup
+# Set default port if not provided
+PORT=${PORT:-8000}
+
+# Check if we're in the right directory
+echo "📁 Current directory: $(pwd)"
+echo "📁 Files:"
+ls -la
+
+# Run database setup if needed
+echo "🗄️  Checking database..."
 python setup_db.py
 
-# Start the application
-exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --log-level info
+# Start the server
+echo "🚀 Starting server on port $PORT..."
+exec uvicorn main:app --host 0.0.0.0 --port $PORT

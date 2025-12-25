@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Optional
 import os
+import sys
 from datetime import timedelta
 import uuid
 import PyPDF2
@@ -20,6 +21,9 @@ load_dotenv()
 from auth import *
 from models import Base, Student, Assignment, AnalysisResult, AcademicSource
 from rag_service import RAGService
+
+sys.path.insert(0, '/app')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -305,9 +309,21 @@ def root():
 
 if __name__ == "__main__":
     import uvicorn
-    import os
     
+    # Get port from Railway environment
+    port = int(os.getenv("PORT", 8000))
     host = os.getenv("BACKEND_HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", os.getenv("BACKEND_PORT", 8000)))  # Railway uses PORT
-    print(f"🚀 Starting Academic Assignment Helper on {host}:{port}...")
-    uvicorn.run(app, host=host, port=port, log_level="info")
+    
+    print(f"🚀 Starting Academic Assignment Helper")
+    print(f"🌐 Host: {host}")
+    print(f"🔢 Port: {port}")
+    print(f"🗄️  Database: {os.getenv('DATABASE_URL', 'Not set')[:50]}...")
+    print(f"🔑 OpenAI configured: {bool(os.getenv('OPENAI_API_KEY'))}")
+    
+    uvicorn.run(
+        "main:app",
+        host=host,
+        port=port,
+        log_level="info",
+        reload=False  # Disable reload in production
+    )
