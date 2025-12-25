@@ -1,19 +1,29 @@
-#!/bin/bash
-# backend/start.sh
-echo "🔧 Starting server..."
-echo "PORT: ${PORT:-8000}"
+FROM python:3.11-slim
 
-# Run database setup
-python setup_db.py
+WORKDIR /app
 
-# Start the server
-exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}#!/bin/bash
-# backend/start.sh
-echo "🔧 Starting server..."
-echo "PORT: ${PORT:-8000}"
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Run database setup
-python setup_db.py
+# Copy backend requirements
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Start the server
-exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Copy backend code
+COPY backend/ /app/
+
+# Create uploads directory
+RUN mkdir -p uploads && chmod 755 uploads
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+# Run the app
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT
