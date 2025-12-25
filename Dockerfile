@@ -27,4 +27,4 @@ USER appuser
 ENV PORT=8000
 
 # Command for Render - Fixed: use main:app since we're in /app
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "cd /app && chmod +x start.sh && ./start.sh"]
