@@ -1,29 +1,27 @@
-# Dockerfile at project root
+# Alternative Dockerfile
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     libpq-dev \
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
+# Copy and install Python packages
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code
+# Copy application
 COPY backend/ /app/
 
 # Create uploads directory
-RUN mkdir -p uploads && chmod 755 uploads
+RUN mkdir -p uploads
 
-# Expose port
-EXPOSE 8000
+# Set Python path
+ENV PYTHONPATH=/app
 
-# Create a simple startup command
-CMD ["/bin/sh", "-c", "echo 'Starting server...' && python setup_db.py && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Run setup then start server
+CMD python setup_db.py && exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
