@@ -26,5 +26,9 @@ USER appuser
 # Render uses PORT environment variable
 ENV PORT=8000
 
-# Command for Render - Fixed: use main:app since we're in /app
-CMD ["sh", "-c", "cd /app && chmod +x start.sh && ./start.sh"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Command for Render
+CMD ["sh", "-c", "chmod +x start.sh && ./start.sh"]

@@ -8,9 +8,9 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.0
 python-multipart==0.0.12
 
-# Database
+# Database - CHANGED TO psycopg2-binary (for psycopg2 compatibility)
 sqlalchemy==2.0.35
-psycopg-binary==3.3.2
+psycopg2-binary==2.9.9  # CHANGED from psycopg-binary
 
 # OpenAI
 openai==1.50.0

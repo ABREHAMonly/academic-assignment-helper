@@ -31,6 +31,12 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 
+# Ensure DATABASE_URL uses correct dialect for psycopg2
+if DATABASE_URL.startswith("postgresql+psycopg://"):
+    # Convert to psycopg2 format if using psycopg2-binary
+    DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg://", "postgresql+psycopg2://")
+    print(f"📝 Converted DATABASE_URL to psycopg2 format")
+
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
