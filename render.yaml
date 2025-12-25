@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: academic-assignment-helper
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: academic-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: USE_VECTOR
+        value: "false"
+      - key: BACKEND_HOST
+        value: "0.0.0.0"
+      - key: UPLOAD_DIR
+        value: "/app/uploads"
+    healthCheckPath: /health
+    autoDeploy: true
+
+databases:
+  - name: academic-db
+    plan: free
+    databaseName: academic_helper
+    user: academic_helper_user

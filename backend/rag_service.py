@@ -14,10 +14,13 @@ openai_client = None
 try:
     api_key = os.getenv("OPENAI_API_KEY")
     if api_key and api_key.strip():
-        openai_client = OpenAI(api_key=api_key)
+        openai_client = OpenAI(
+            api_key=api_key,
+            # Remove proxies parameter if not needed
+        )
         print("✅ OpenAI client initialized")
     else:
-        logger.warning("⚠️ OPENAI_API_KEY not found")
+        logger.warning("⚠️ OPENAI_API_KEY not found in environment variables")
 except Exception as e:
     logger.error(f"❌ Failed to initialize OpenAI: {e}")
     openai_client = None
@@ -113,7 +116,7 @@ class RAGService:
             """
             
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # UPDATED: Cheaper and faster
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are an academic research assistant."},
                     {"role": "user", "content": prompt}
@@ -150,7 +153,7 @@ class RAGService:
             """
             
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # UPDATED
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a plagiarism detection system."},
                     {"role": "user", "content": prompt}

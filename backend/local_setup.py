@@ -1,4 +1,3 @@
-# backend/local_setup.py
 import os
 import sys
 import subprocess
@@ -18,7 +17,14 @@ def setup_local_environment():
         print("✅ Dependencies installed successfully!")
     except subprocess.CalledProcessError as e:
         print(f"❌ Failed to install dependencies: {e}")
-        return False
+        print("💡 Trying with upgraded pip...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", os.path.join(script_dir, "requirements.txt")])
+            print("✅ Dependencies installed successfully after pip upgrade!")
+        except subprocess.CalledProcessError as e2:
+            print(f"❌ Still failed: {e2}")
+            return False
     
     # Create .env file if it doesn't exist
     env_path = os.path.join(root_dir, ".env")
@@ -32,6 +38,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/academic_helper
 JWT_SECRET_KEY=your-super-secret-jwt-key-change-this-in-production
 
 # OpenAI API (optional - for RAG and AI features)
+# Get your key from: https://platform.openai.com/api-keys
 OPENAI_API_KEY=your_openai_api_key_here
 
 # Vector Database
@@ -55,14 +62,6 @@ UPLOAD_DIR=./uploads
     os.makedirs(uploads_dir, exist_ok=True)
     print(f"✅ Created uploads directory: {uploads_dir}")
     
-    # Create data directory
-    data_dir = os.path.join(root_dir, "data")
-    os.makedirs(data_dir, exist_ok=True)
-    
-    # Create workflows directory
-    workflows_dir = os.path.join(root_dir, "workflows")
-    os.makedirs(workflows_dir, exist_ok=True)
-    
     return True
 
 if __name__ == "__main__":
@@ -71,8 +70,9 @@ if __name__ == "__main__":
         print("\n🎉 Setup complete!")
         print("📋 Next steps:")
         print("  1. Update .env file with your configuration")
-        print("  2. Run: python backend/setup_db.py to initialize database")
-        print("  3. Run: python backend/main.py to start the server")
-        print("  4. Access: http://localhost:8000/docs")
+        print("  2. Ensure PostgreSQL is running on localhost:5432")
+        print("  3. Run: python backend/setup_db.py to initialize database")
+        print("  4. Run: python backend/main.py to start the server")
+        print("  5. Access: http://localhost:8000/docs")
     else:
         print("\n❌ Setup failed. Please check errors above.")
